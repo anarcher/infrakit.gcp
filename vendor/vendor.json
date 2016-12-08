@@ -3,35 +3,47 @@
 	"ignore": "test",
 	"package": [
 		{
-			"checksumSHA1": "jRtYpPa7CRuA+LP4ELF9c9CjJao=",
+			"checksumSHA1": "z9ckOyaoHErgXLQDx514AOMxdeo=",
 			"origin": "github.com/docker/infrakit/vendor/github.com/Sirupsen/logrus",
 			"path": "github.com/Sirupsen/logrus",
-			"revision": "abd089346bf6e7828c855895739cd7a6c341f54a",
-			"revisionTime": "2016-11-18T23:40:17Z"
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
 		},
 		{
-			"checksumSHA1": "xIoamspZqld5NLTth0sRHv3C0tk=",
+			"checksumSHA1": "UBi4qJvRS2npkf1mfUZU40Ck3W4=",
 			"path": "github.com/docker/infrakit/pkg/cli",
-			"revision": "abd089346bf6e7828c855895739cd7a6c341f54a",
-			"revisionTime": "2016-11-18T23:40:17Z"
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
 		},
 		{
 			"checksumSHA1": "HmPbL92TpdNncLdQfmOeT9oytfM=",
 			"path": "github.com/docker/infrakit/pkg/discovery",
-			"revision": "abd089346bf6e7828c855895739cd7a6c341f54a",
-			"revisionTime": "2016-11-18T23:40:17Z"
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
 		},
 		{
 			"checksumSHA1": "D42pBrsti1vQkkV2ahcHp2rlbc0=",
 			"path": "github.com/docker/infrakit/pkg/plugin",
-			"revision": "abd089346bf6e7828c855895739cd7a6c341f54a",
-			"revisionTime": "2016-11-18T23:40:17Z"
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
 		},
 		{
-			"checksumSHA1": "5ZwGFEpT05MYY5o4dcJfbK8fiSE=",
+			"checksumSHA1": "608n+XSm9bFCB7VpQKd3FC0VSUY=",
+			"path": "github.com/docker/infrakit/pkg/rpc/plugin",
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
+		},
+		{
+			"checksumSHA1": "u+dQFMJJR7AfhsbjNJMG47qtvfw=",
 			"path": "github.com/docker/infrakit/pkg/rpc/server",
-			"revision": "abd089346bf6e7828c855895739cd7a6c341f54a",
-			"revisionTime": "2016-11-18T23:40:17Z"
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
+		},
+		{
+			"checksumSHA1": "KvKvYo44C3EY7TDoNTJKfSAHXyQ=",
+			"path": "github.com/docker/infrakit/pkg/spi",
+			"revision": "51f5aa5d2a8cf807ffcac8758d5e1be7916fd36e",
+			"revisionTime": "2016-12-06T19:32:30Z"
 		},
 		{
 			"checksumSHA1": "ZVzABul4nD/fzyYnbe+5bsJ4nBg=",
@@ -46,6 +58,12 @@
 			"revisionTime": "2016-09-23T22:06:01Z"
 		},
 		{
+			"checksumSHA1": "7yTdbVbA4b9KQbkkbdIU7OL2ivM=",
+			"path": "github.com/gorilla/rpc/v2/json2",
+			"revision": "22c016f3df3febe0c1f6727598b6389507e03a18",
+			"revisionTime": "2016-09-23T22:06:01Z"
+		},
+		{
 			"checksumSHA1": "40vJyUB4ezQSn/NSadsKEOrudMc=",
 			"path": "github.com/inconshreveable/mousetrap",
 			"revision": "76626ae9c91c4f2a10f34cad8ce83ea42c93bb75",
@@ -53,23 +71,21 @@
 		},
 		{
 			"checksumSHA1": "FZ0r4TzEy9UxXLkFVXFygApni4M=",
-			"origin": "github.com/anarcher/infrakit.gcp/vendor/github.com/spf13/cobra",
 			"path": "github.com/spf13/cobra",
 			"revision": "9495bc009a56819bdb0ddbc1a373e29c140bc674",
 			"revisionTime": "2016-11-16T13:20:53Z"
 		},
 		{
 			"checksumSHA1": "GxPD7A0NjMDom1xte0mghkpzr0E=",
-			"origin": "github.com/anarcher/infrakit.gcp/vendor/github.com/spf13/pflag",
 			"path": "github.com/spf13/pflag",
 			"revision": "5ccb023bc27df288a957c5e994cd44fd19619465",
 			"revisionTime": "2016-10-24T13:13:51Z"
 		},
 		{
-			"checksumSHA1": "MlTI84eWAFvqeRgXxBtjRYHk1yQ=",
+			"checksumSHA1": "8SH0adTcQlA+W5dzqiQ3Hft2VXg=",
 			"path": "golang.org/x/sys/unix",
-			"revision": "30237cf4eefd639b184d1f2cb77a581ea0be8947",
-			"revisionTime": "2016-11-19T15:29:01Z"
+			"revision": "478fcf54317e52ab69f40bb4c7a1520288d7f7ea",
+			"revisionTime": "2016-12-05T15:46:50Z"
 		},
 		{
 			"checksumSHA1": "hiOUviIMDKo7y918uBiEhfJyOkk=",
