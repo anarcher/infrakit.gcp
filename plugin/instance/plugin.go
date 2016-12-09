@@ -7,6 +7,7 @@ import (
 	"net/http"
 
 	"github.com/docker/infrakit/pkg/spi/instance"
+	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
 )
 
@@ -44,6 +45,18 @@ func (p gceInstancePlugin) Provision(spec instance.Spec) (*instance.ID, error) {
 		return nil, fmt.Errorf("Invalid input formatting: %s", err)
 	}
 
+	// Add Project,Zone to spec.Tags for using in  DescribeInstances
+	spec.Tags["Project"] = props.Project
+	spec.Tags["Zone"] = props.Zone
+
+	for k, v := range spec.Tags {
+		props.Instance.Metadata.Items = append(props.Instance.Metadata.Items, &compute.MetadataItems{Key: k, Value: &v})
+	}
+
+	if spec.Init != "" {
+		props.Instance.Metadata.Items = append(props.Instance.Metadata.Items, &compute.MetadataItems{Key: "startup-script", Value: &spec.Init})
+	}
+
 	resp, err := p.service.Instances.Insert(props.Project, props.Zone, props.Instance).Do()
 	if err != nil {
 		return nil, err
@@ -75,5 +88,33 @@ func (p gceInstancePlugin) Destroy(instanceId instance.ID) error {
 
 // DescribeInstances implements instance.Provisioner.DescribeInstances.
 func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance.Description, error) {
-	return nil, nil
+	descriptions := []instance.Description{}
+
+	project := tags["Project"]
+	zone := tags["Zone"]
+
+	call := p.service.Instances.List(project, zone)
+	for k, v := range tags {
+		call = call.Filter(fmt.Sprintf("metadata.items.key:%s AND metadata.items.value:%s", k, v))
+	}
+
+	ctx := context.Background() //todo(anarcher)
+	if err := call.Pages(ctx, func(page *compute.InstanceList) error {
+		for _, v := range page.Items {
+			//todo(anarcher): checking metadata. key=value
+			logicalID := instance.LogicalID(v.Name)
+			descriptions = append(descriptions, instance.Description{
+				ID:        instance.ID(v.Name),
+				LogicalID: &logicalID,
+				//Tags:      nil, //todo(anarcher) p.tagInstance()..
+			})
+
+		}
+
+		return nil
+	}); err != nil {
+		return descriptions, err
+	}
+
+	return descriptions, nil
 }
