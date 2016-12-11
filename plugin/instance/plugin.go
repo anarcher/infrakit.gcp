@@ -106,7 +106,7 @@ func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance
 			descriptions = append(descriptions, instance.Description{
 				ID:        instance.ID(v.Name),
 				LogicalID: &logicalID,
-				//Tags:      nil, //todo(anarcher) p.tagInstance()..
+				Tags:      instanceTags(v.Metadata),
 			})
 
 		}
