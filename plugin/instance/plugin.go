@@ -4,31 +4,24 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"net/http"
 
+	log "github.com/Sirupsen/logrus"
 	"github.com/docker/infrakit/pkg/spi/instance"
 	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
 )
 
 type gceInstancePlugin struct {
-	client  *http.Client
 	service *compute.Service
 }
 
 // NewInstancePlugin creates a new plugin that creates instances in GCE.
-func NewInstancePlugin(client *http.Client) instance.Plugin {
-	return &gceInstancePlugin{client: client}
+func NewInstancePlugin(service *compute.Service) instance.Plugin {
+	return &gceInstancePlugin{service: service}
 }
 
 // Validate performs local checks to determine if the request is valid.
 func (p *gceInstancePlugin) Validate(req json.RawMessage) error {
-	service, err := compute.New(p.client)
-	if err != nil {
-		return err
-	}
-	p.service = service
-
 	// TODO(anarcher): Implement
 	return nil
 }
@@ -46,6 +39,7 @@ func (p gceInstancePlugin) Provision(spec instance.Spec) (*instance.ID, error) {
 	}
 
 	// Add Project,Zone to spec.Tags for using in  DescribeInstances
+	spec.Tags = map[string]string{}
 	spec.Tags["Project"] = props.Project
 	spec.Tags["Zone"] = props.Zone
 
@@ -59,6 +53,7 @@ func (p gceInstancePlugin) Provision(spec instance.Spec) (*instance.ID, error) {
 
 	resp, err := p.service.Instances.Insert(props.Project, props.Zone, props.Instance).Do()
 	if err != nil {
+		log.Error(err)
 		return nil, err
 	}
 

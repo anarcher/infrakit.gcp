@@ -32,8 +32,13 @@ func main() {
 				log.Error(err)
 				os.Exit(1)
 			}
+			service, err := compute.New(client)
+			if err != nil {
+				log.Error(err)
+				os.Exit(1)
+			}
 
-			instancePlugin := instance.NewInstancePlugin(client)
+			instancePlugin := instance.NewInstancePlugin(service)
 			cli.SetLogLevel(logLevel)
 			cli.RunPlugin(name, instance_plugin.PluginServer(instancePlugin))
 		},
