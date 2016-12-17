@@ -5,12 +5,19 @@ import (
 	"errors"
 	"fmt"
 	"math/rand"
+	"time"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/infrakit/pkg/spi/instance"
 	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
 	"google.golang.org/api/googleapi"
+)
+
+const (
+	ZONE_OPERATION_STATUS_DONE   = "DONE"
+	INSTANCE_STATUS_RUNNING      = "RUNNING"
+	INSTANCE_STATUS_PROVISIONING = "PROVISIONING"
 )
 
 type gceInstancePlugin struct {
@@ -87,7 +94,32 @@ func (p gceInstancePlugin) Provision(spec instance.Spec) (*instance.ID, error) {
 	}
 
 	instanceId := instance.ID(instanceName)
-	log.Debugf("Provision instance id: %v resource name: %v", instanceId, resp.Name)
+	log.Debugf("Instance id is %v The operation of it is %v", instanceId, resp.Name)
+
+	//Checking provision processing
+	{
+		timer := time.NewTimer(time.Second * 20)
+		ticker := time.NewTicker(time.Second * 1)
+	C:
+		for _ = range ticker.C {
+
+			select {
+			case <-timer.C:
+				return nil, fmt.Errorf("Instance %v provisioning operation %v has timed out", instanceName, resp.Name)
+			default:
+				resp, err := p.service.ZoneOperations.Get(p.project, p.zone, resp.Name).Do()
+				if err != nil {
+					log.Error(err)
+					return nil, err
+				}
+				log.Debugf("Provision instance %v has %v status", instanceName, resp.Status)
+				if resp.Status == ZONE_OPERATION_STATUS_DONE {
+					break C
+				}
+			}
+
+		}
+	}
 
 	return &instanceId, nil
 }
@@ -127,7 +159,7 @@ func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance
 			metadataJson, _ := v.Metadata.MarshalJSON()
 			log.Debugf("Instance Name:%v,Status:%v,Metadata:%s", v.Name, v.Status, metadataJson)
 
-			if v.Status == "RUNNING" || v.Status == "PROVISIONING" {
+			if v.Status == INSTANCE_STATUS_RUNNING || v.Status == INSTANCE_STATUS_PROVISIONING {
 			} else {
 				continue
 			}
@@ -160,6 +192,6 @@ func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance
 		return descriptions, err
 	}
 
-	log.Debugf("Instance description len:%v", len(descriptions))
+	log.Debugf("There is %v related instances", len(descriptions))
 	return descriptions, nil
 }
