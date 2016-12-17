@@ -19,11 +19,22 @@ func main() {
 	var logLevel int
 	var name string
 	var namespaceTags []string
+	var project string
+	var zone string
 
 	cmd := &cobra.Command{
 		Use:   os.Args[0],
 		Short: "GCE instance plugin",
 		Run: func(c *cobra.Command, args []string) {
+
+			if project == "" {
+				log.Error("Project must be required")
+				os.Exit(1)
+			}
+			if zone == "" {
+				log.Error("Zone must be required")
+				os.Exit(1)
+			}
 
 			ctx := context.Background()
 
@@ -38,7 +49,7 @@ func main() {
 				os.Exit(1)
 			}
 
-			instancePlugin := instance.NewInstancePlugin(service)
+			instancePlugin := instance.NewInstancePlugin(service, project, zone)
 			cli.SetLogLevel(logLevel)
 			cli.RunPlugin(name, instance_plugin.PluginServer(instancePlugin))
 		},
@@ -51,6 +62,9 @@ func main() {
 		"namespace-tags",
 		[]string{},
 		"A list of key=value resource tags to namespace all resources created")
+
+	cmd.Flags().StringVar(&project, "project", "", "Google cloud platform project ID")
+	cmd.Flags().StringVar(&zone, "zone", "", "Google cloud platform zone")
 
 	cmd.AddCommand(cli.VersionCommand())
 

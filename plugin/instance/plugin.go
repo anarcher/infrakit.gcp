@@ -4,20 +4,28 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math/rand"
 
 	log "github.com/Sirupsen/logrus"
 	"github.com/docker/infrakit/pkg/spi/instance"
 	"golang.org/x/net/context"
 	"google.golang.org/api/compute/v1"
+	"google.golang.org/api/googleapi"
 )
 
 type gceInstancePlugin struct {
 	service *compute.Service
+	project string
+	zone    string
 }
 
 // NewInstancePlugin creates a new plugin that creates instances in GCE.
-func NewInstancePlugin(service *compute.Service) instance.Plugin {
-	return &gceInstancePlugin{service: service}
+func NewInstancePlugin(service *compute.Service, project, zone string) instance.Plugin {
+	return &gceInstancePlugin{
+		service: service,
+		project: project,
+		zone:    zone,
+	}
 }
 
 // Validate performs local checks to determine if the request is valid.
@@ -38,40 +46,55 @@ func (p gceInstancePlugin) Provision(spec instance.Spec) (*instance.ID, error) {
 		return nil, fmt.Errorf("Invalid input formatting: %s", err)
 	}
 
-	// Add Project,Zone to spec.Tags for using in  DescribeInstances
-	spec.Tags = map[string]string{}
-	spec.Tags["Project"] = props.Project
-	spec.Tags["Zone"] = props.Zone
+	var instanceName string
+
+	if spec.LogicalID != nil {
+		if props.Instance.Name != "" {
+			instanceName = fmt.Sprintf("%s-%s", props.Instance.Name, spec.LogicalID)
+		} else {
+			instanceName = fmt.Sprintf("%s", spec.LogicalID)
+		}
+	} else {
+		if props.Instance.Name != "" {
+			instanceName = fmt.Sprintf("%s-%d", props.Instance.Name, rand.Int31())
+		} else {
+			instanceName = fmt.Sprintf("%s-%d", spec.Tags["infrakit.group"], rand.Int31())
+		}
+	}
+
+	props.Instance.Name = instanceName
+
+	if props.Instance.Metadata == nil {
+		props.Instance.Metadata = &compute.Metadata{
+			Items: []*compute.MetadataItems{},
+		}
+	}
 
 	for k, v := range spec.Tags {
-		props.Instance.Metadata.Items = append(props.Instance.Metadata.Items, &compute.MetadataItems{Key: k, Value: &v})
+		key := ensureToMetadataKey(k)
+		value := v
+		props.Instance.Metadata.Items = append(props.Instance.Metadata.Items, &compute.MetadataItems{Key: key, Value: &value})
 	}
 
 	if spec.Init != "" {
 		props.Instance.Metadata.Items = append(props.Instance.Metadata.Items, &compute.MetadataItems{Key: "startup-script", Value: &spec.Init})
 	}
 
-	resp, err := p.service.Instances.Insert(props.Project, props.Zone, props.Instance).Do()
+	resp, err := p.service.Instances.Insert(p.project, p.zone, props.Instance).Do()
 	if err != nil {
 		log.Error(err)
 		return nil, err
 	}
 
-	instanceId := instance.ID(NewID(props.Project, props.Zone, resp.Name).String())
+	instanceId := instance.ID(instanceName)
+	log.Debugf("Provision instance id: %v resource name: %v", instanceId, resp.Name)
 
 	return &instanceId, nil
 }
 
 // Destroy terminates an existing instance.
 func (p gceInstancePlugin) Destroy(instanceId instance.ID) error {
-	id, err := GetID(string(instanceId))
-	if err != nil {
-		return err
-	}
-
-	project, zone, name := id.project, id.zone, id.name
-
-	_, err = p.service.Instances.Delete(project, zone, name).Do()
+	_, err := p.service.Instances.Delete(p.project, p.zone, string(instanceId)).Do()
 	if err != nil {
 		return err
 	}
@@ -85,31 +108,58 @@ func (p gceInstancePlugin) Destroy(instanceId instance.ID) error {
 func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance.Description, error) {
 	descriptions := []instance.Description{}
 
-	project := tags["Project"]
-	zone := tags["Zone"]
+	call := p.service.Instances.List(p.project, p.zone)
+	//todo(anarcher): Currently,GCP compute instances list API filter doesn't support metadata filtering.
+	//So getting all instances information and then filtering by tags for now.
+	/*
+		for k, _ := range tags {
+			call = call.Filter(fmt.Sprintf("metadata.items.key=%s", k))
+		}
+	*/
+	//call = call.Filter("status=RUNNING")
 
-	call := p.service.Instances.List(project, zone)
-	for k, v := range tags {
-		call = call.Filter(fmt.Sprintf("metadata.items.key:%s AND metadata.items.value:%s", k, v))
-	}
+	call = call.Fields(googleapi.Field("items(id,metadata/items,name,status)"))
 
 	ctx := context.Background() //todo(anarcher)
 	if err := call.Pages(ctx, func(page *compute.InstanceList) error {
 		for _, v := range page.Items {
-			//todo(anarcher): checking metadata. key=value
+
+			metadataJson, _ := v.Metadata.MarshalJSON()
+			log.Debugf("Instance Name:%v,Status:%v,Metadata:%s", v.Name, v.Status, metadataJson)
+
+			if v.Status == "RUNNING" || v.Status == "PROVISIONING" {
+			} else {
+				continue
+			}
+
+			found := false
+			iTags := instanceTags(v.Metadata)
+			for k, v := range iTags {
+				for _k, _value := range tags {
+					_key := ensureToMetadataKey(_k)
+					if k == _key && v == _value {
+						found = true
+					}
+				}
+			}
+
+			if !found {
+				continue
+			}
+
 			logicalID := instance.LogicalID(v.Name)
 			descriptions = append(descriptions, instance.Description{
 				ID:        instance.ID(v.Name),
 				LogicalID: &logicalID,
-				Tags:      instanceTags(v.Metadata),
+				Tags:      iTags,
 			})
-
 		}
-
 		return nil
 	}); err != nil {
+		log.Error(err)
 		return descriptions, err
 	}
 
+	log.Debugf("Instance description len:%v", len(descriptions))
 	return descriptions, nil
 }

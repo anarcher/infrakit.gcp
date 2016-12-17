@@ -5,7 +5,5 @@ import (
 )
 
 type Properties struct {
-	Project  string            `json:"project"`
-	Zone     string            `json:"zone"`
 	Instance *compute.Instance `json:"instance"`
 }
