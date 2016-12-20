@@ -19,12 +19,17 @@ func instanceTags(metadata *compute.Metadata) map[string]string {
 		return tags
 	}
 	for _, item := range metadata.Items {
-		tags[item.Key] = *item.Value
+		key := ensureToTagKey(item.Key)
+		tags[key] = *item.Value
 	}
 	return tags
 }
 
 // Replace dot(.) in value to dash(-) in key value (GCP Metadata key must be a match of regex '[a-zA-Z0-9-_]{1,128})
 func ensureToMetadataKey(v string) string {
-	return strings.Replace(v, ".", "-", -1)
+	return strings.Replace(v, ".", "---", -1)
+}
+
+func ensureToTagKey(v string) string {
+	return strings.Replace(v, "---", ".", -1)
 }

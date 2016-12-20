@@ -167,9 +167,8 @@ func (p gceInstancePlugin) DescribeInstances(tags map[string]string) ([]instance
 			found := false
 			iTags := instanceTags(v.Metadata)
 			for k, v := range iTags {
-				for _k, _value := range tags {
-					_key := ensureToMetadataKey(_k)
-					if k == _key && v == _value {
+				for _k, _v := range tags {
+					if k == _k && v == _v {
 						found = true
 					}
 				}
